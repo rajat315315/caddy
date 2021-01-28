@@ -16,6 +16,7 @@ package maphandler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -127,16 +128,24 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 		}
 
 		input := repl.ReplaceAll(h.Source, "")
+		log.Printf("[INFO] output value : %v", input)
 
 		// find the first mapping matching the input and return
 		// the requested destination/output value
 		for _, m := range h.Mappings {
 			if m.re != nil {
-				if m.re.MatchString(input) {
+				log.Printf("[INFO] m.InputRegexp : %s", m.InputRegexp)
+				matchRegexp := caddyhttp.MatchRegexp{Pattern: m.InputRegexp, Name: "name"}
+				log.Printf("[INFO] matchRegexp.Match : %v", matchRegexp.Match(input, repl))
+				matchRegexp = caddyhttp.MatchRegexp{Pattern: "([\\w]+)", Name: "name"}
+				log.Printf("[INFO] matchRegexp.Match2 : %v", matchRegexp.Match(input, repl))
+				if matchRegexp.Match(input, repl) {
+					log.Printf("[INFO] output value : %v", input)
 					if output := m.Outputs[destIdx]; output == nil {
 						continue
 					} else {
-						output = m.re.ReplaceAllString(input, m.Outputs[destIdx].(string))
+						output = repl.ReplaceAll(m.Outputs[destIdx].(string), "")
+						log.Printf("[INFO] output value : %v", output)
 						return output, true
 					}
 				}
